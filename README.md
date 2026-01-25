@@ -57,3 +57,28 @@ npx skills add https://github.com/gn00678465/AgentSkills.git
 **Prerequisites:**
 
 - 需安裝並登入 GitHub CLI (`gh auth login`)
+
+### Prompt Optimizer
+
+分析並優化使用者的 prompt，透過系統化解構和框架重建，將模糊或結構不良的 prompt 轉換為高精準、無歧義的版本。
+
+**Use Cases:**
+
+適用於需要改善 prompt 品質時，例如：
+
+- 「優化這個 prompt」
+- 「改進這段指令」
+- 「重構這個 prompt」
+- 「讓這個 prompt 更清楚」
+
+**Features:**
+
+- **解構分析**：識別 prompt 的核心目標、模糊點與任務複雜度
+- **框架重建**：根據任務類型選擇最適合的框架（B.R.O.K.E, T.R.A.C.E, C.L.E.A.R 等）
+- **驗證檢查**：確保優化後的 prompt 完整、無歧義且符合框架結構
+
+**Usage:**
+
+1. 準備需要優化的 prompt
+2. 輸入上述任一指令並提供原始 prompt
+3. 獲得優化後的 prompt 及優化理由說明
