@@ -133,16 +133,72 @@ PR 內容應包含以下區塊：
 
 ### 步驟 5：建立 Pull Request
 
-使用 GitHub CLI 建立 PR：
+使用 GitHub CLI 建立 PR。
+
+**⚠️ 重要：使用 `--body-file` 避免轉義問題**
+
+直接在命令列使用 `--body` 會導致換行符 `\n` 和其他特殊字符出現轉義問題。**建議使用檔案方式**：
 
 ```bash
-gh pr create --base <目標分支> --head <當前分支> --title "<標題>" --body "<內容>"
+# 方法 1（推薦）：將內容寫入暫存檔案
+# 1. 建立暫存檔案 pr-body.md，寫入 PR 描述內容
+# 2. 使用 --body-file 讀取檔案
+gh pr create --base <目標分支> --head <當前分支> --title "<標題>" --body-file pr-body.md
+
+# 3. 建立完成後刪除暫存檔案
+```
+
+**PowerShell 範例：**
+
+```powershell
+# 將 PR 描述寫入檔案
+@"
+### 摘要
+實作使用者登入功能
+
+### 修改內容
+- 新增登入 API 端點
+- 實作 JWT 驗證機制
+
+### ⚠️ 風險評估
+無破壞性變更
+"@ | Out-File -FilePath pr-body.md -Encoding UTF8
+
+# 建立 PR
+gh pr create --base main --title "feat: 實作登入功能" --body-file pr-body.md
+
+# 清理暫存檔案
+Remove-Item pr-body.md
+```
+
+**Bash 範例：**
+
+```bash
+# 將 PR 描述寫入檔案
+cat << 'EOF' > pr-body.md
+### 摘要
+實作使用者登入功能
+
+### 修改內容
+- 新增登入 API 端點
+- 實作 JWT 驗證機制
+
+### ⚠️ 風險評估
+無破壞性變更
+EOF
+
+# 建立 PR
+gh pr create --base main --title "feat: 實作登入功能" --body-file pr-body.md
+
+# 清理暫存檔案
+rm pr-body.md
 ```
 
 **常用選項：**
 
 | 選項 | 說明 |
 |------|------|
+| `--body-file <file>` | 從檔案讀取 PR 描述（推薦） |
 | `--draft` | 建立草稿 PR |
 | `--reviewer <users>` | 指定審核者（逗號分隔） |
 | `--assignee <users>` | 指定負責人 |
