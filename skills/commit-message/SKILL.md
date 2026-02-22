@@ -1,6 +1,6 @@
 ---
 name: commit-message
-description: 分析 git staged changes 並根據 Conventional Commits 規範自動生成繁體中文 commit message。適用於需要生成符合規範的 commit 訊息時，例如「幫我寫 commit message」、「產生 commit」、「提交變更」等請求。會自動檢查是否在 main/master 分支並提供適當建議。
+description: 分析 git staged changes 並根據 Conventional Commits (1.0.0-beta.4) 規範自動生成繁體中文 commit message。使用時機包括：(1) 需要為已暫存 (staged) 的變更生成符合規範的提交訊息、(2) 確保提交訊息包含正確的類型 (type) 與範圍 (scope)、(3) 在主分支 (main/master) 工作時需要自動化分支建議。適用於包含「幫我寫 commit message」、「產生 commit」、「提交變更」等請求的情境。會根據變更量與風險自動選擇簡單或詳細的提交模式。
 metadata: 
   version: 0.1.0
 ---
@@ -8,12 +8,6 @@ metadata:
 # 慣例式提交訊息生成器
 
 根據 [Conventional Commits 1.0.0-beta.4](https://www.conventionalcommits.org/zh-hant/v1.0.0-beta.4/) 規範，分析 git staged changes 並自動生成繁體中文 commit message。
-
-## 使用時機
-
-- 需要為 staged changes 生成 commit message
-- 想要符合慣例式提交規範的提交訊息
-- 需要繁體中文描述的 commit message
 
 ## 慣例式提交規範
 
