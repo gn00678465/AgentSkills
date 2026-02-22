@@ -1,7 +1,8 @@
 ---
-name: github-pr
+name: pull-request
 description: 協助建立或修改 GitHub Pull Request。根據當前分支的 commits 自動產生繁體中文 PR 標題與描述。適用於「建立 PR」、「create pull request」、「幫我開 PR」、「修改 PR 內容」等請求。使用 GitHub CLI (gh) 執行 PR 操作。
-version: 0.1.0
+metadata:
+   version: 0.1.0
 ---
 
 # GitHub Pull Request 助手
