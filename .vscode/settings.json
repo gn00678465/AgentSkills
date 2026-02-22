@@ -7,5 +7,6 @@
     {
       "file": ".github/copilot-common/instructions/commit-message-generation.instructions.md"
     }
-  ]
+  ],
+  "chat.useAgentSkills": true
 }

@@ -1,6 +1,8 @@
 ---
 name: prompt-optimizer
 description: Analyze and optimize user prompts through systematic deconstruction and framework-based reconstruction. Use when users request prompt improvement, optimization, refactoring, or restructuring. Triggers include "optimize this prompt", "improve this instruction", "refactor this prompt", "make this clearer", "restructure this prompt", or when analyzing poorly-structured prompts. This skill analyzes prompts for ambiguity, applies proven frameworks (B.R.O.K.E, T.R.A.C.E, C.L.E.A.R, etc.), and outputs high-precision, unambiguous prompts.
+metadata:
+  version: 0.1.0
 ---
 
 # Prompt Optimizer
