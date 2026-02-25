@@ -10,23 +10,29 @@ npx skills add https://github.com/gn00678465/AgentSkills.git
 
 ## Included Skills
 
-### Commit Message
+### Commit Message (v0.2.1)
 
-分析 git staged changes 並根據 Conventional Commits 規範自動生成繁體中文 commit message。
+分析 git staged changes 並根據 Conventional Commits 規範自動生成**繁體中文 commit message** 與**語意化分支名稱**。
 
 **Use Cases:**
 
-適用於需要生成符合規範的 commit 訊息時，例如：
-
 - 「幫我寫 commit message」
-- 「產生 commit」
+- 「取個分支名並產生 commit」
 - 「提交變更」
+- 「主分支誤改，幫我切分支並提交」
+
+**Features:**
+
+- **自動化分析**：透過 `analyze_git.py` 自動計算變更複雜度與識別高風險檔案（如 Lock 檔案）。
+- **語意化分支建議**：根據變更內容（feat, fix, refactor）自動產生建議的分支名稱。
+- **主分支保護**：偵測到在 `main`/`master` 分支時，主動阻止提交並引導切換。
+- **原子化提交引導**：針對高複雜度變更，提供具體的 `git reset` 與 `git add` 指令協助拆分提交。
 
 **Usage:**
 
 1. 確保有暫存的變更：`git add <files>`
 2. 輸入上述任一指令。
-3. 根據回饋建議選擇提交方式（`-m` 或 `-F`）。
+3. 依據模型回饋選擇執行對應的 Git 指令。
 
 ### GitHub PR
 
