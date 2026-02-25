@@ -1,6 +1,7 @@
 import subprocess
 import os
 import sys
+import re
 
 def run_command(cmd):
     try:
@@ -25,22 +26,22 @@ def analyze():
     insertions = 0
     deletions = 0
     
-    last_line = stats_raw.split('
-')[-1]
-    import re
-    files_match = re.search(r'(\d+) file', last_line)
-    ins_match = re.search(r'(\d+) insertion', last_line)
-    del_match = re.search(r'(\d+) deletion', last_line)
+    stats_lines = stats_raw.splitlines()
+    if stats_lines:
+        last_line = stats_lines[-1]
+        files_match = re.search(r'(\d+) file', last_line)
+        ins_match = re.search(r'(\d+) insertion', last_line)
+        del_match = re.search(r'(\d+) deletion', last_line)
+        
+        if files_match: files_changed = int(files_match.group(1))
+        if ins_match: insertions = int(ins_match.group(1))
+        if del_match: deletions = int(del_match.group(1))
     
-    if files_match: files_changed = int(files_match.group(1))
-    if ins_match: insertions = int(ins_match.group(1))
-    if del_match: deletions = int(del_match.group(1))
     total_lines = insertions + deletions
 
     # 3. 取得變更檔案清單
     files_list_raw = run_command("git diff --staged --name-only")
-    files_list = files_list_raw.split('
-') if files_list_raw else []
+    files_list = files_list_raw.splitlines() if files_list_raw else []
 
     # 4. 計算分數
     score = 0
@@ -82,12 +83,14 @@ def analyze():
         primary_type = "fix"
     elif any(re.search(r'refactor', f, re.I) for f in files_list):
         primary_type = "refactor"
+    elif any(re.search(r'build|ci|chore', f, re.I) for f in files_list):
+        primary_type = "build"
         
     # 根據檔案名稱提取關鍵詞
     keywords = []
     for f in files_list:
         name = os.path.basename(f).split('.')[0]
-        if name and name not in ["index", "main", "app", "file1", "file2"]: # 過濾無意義名稱
+        if name and name not in ["index", "main", "app", "file1", "file2", "SKILL"]: # 過濾無意義名稱
             keywords.append(name)
     
     top_keyword = keywords[0] if keywords else "work"
