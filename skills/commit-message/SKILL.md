@@ -1,15 +1,20 @@
 ---
 name: commit-message
-description: 分析 git staged changes 並根據 Conventional Commits (1.0.0-beta.4) 規範自動生成繁體中文 commit message。使用時機包括：(1) 需要為已暫存 (staged) 的變更生成符合規範的提交訊息、(2) 確保提交訊息包含正確的類型 (type) 與範圍 (scope)、(3) 在主分支 (main/master) 工作時需要自動化分支建議。適用於包含「幫我寫 commit message」、「產生 commit」、「提交變更」等請求的情境。會根據變更量與風險自動選擇簡單或詳細的提交模式。
+description: 分析 git staged changes 並根據 Conventional Commits (1.0.0-beta.4) 規範自動生成繁體中文 commit message 與建議的分支名稱。使用時機包括：(1) 需要為已暫存 (staged) 的變更生成符合規範的提交訊息、(2) 需要根據變更內容建議一個有意義的分支名稱、(3) 確保提交包含正確的類型 (type) 與範圍 (scope)、(4) 在主分支 (main/master) 工作時需要自動化分支建議。適用於包含「幫我寫 commit message」、「產生 commit」、「建立 branch」、「取個分支名」、「提交變更」等請求的情境。會根據變更量與風險自動選擇簡單或詳細的提交模式。
 metadata: 
-  version: 0.1.0
+  version: 0.2.1
 ---
 
-# 慣例式提交訊息生成器
+# 慣例式提交與分支助手
 
-根據 [Conventional Commits 1.0.0-beta.4](https://www.conventionalcommits.org/zh-hant/v1.0.0-beta.4/) 規範，分析 git staged changes 並自動生成繁體中文 commit message。
+根據 [Conventional Commits 1.0.0-beta.4](https://www.conventionalcommits.org/zh-hant/v1.0.0-beta.4/) 規範，分析 git staged changes 並自動生成繁體中文 commit message 與建議的分支名稱。
 
-## 慣例式提交規範
+## 核心功能
+
+1.  **分支建議 (Branch Suggestion)**：根據變更檔案內容自動生成語意化的 Git 分支名稱。
+2.  **提交訊息 (Commit Message)**：自動生成符合 Conventional Commits 規範的繁體中文提交訊息。
+3.  **主分支保護 (Main Branch Protection)**：防止在 `main`/`master` 直接提交，並引導切換至建議分支。
+4.  **原子化拆分引導 (Atomic Split Guide)**：偵測高複雜度變更，引導使用者分批提交。
 
 > 完整規範請參考 `references/conventional-commits-spec.md`
 
@@ -104,55 +109,31 @@ BREAKING CHANGE: 移除舊版 API 端點，所有用戶端需更新至新版 SDK
 
 ## 執行步驟
 
-### 步驟 1：取得變更資訊
+### 步驟 1：取得分析資訊
+
+首先執行輔助腳本，自動檢查分支與計算複雜度評分：
 
 ```bash
-# 檢查當前狀態與分支
-git status
-
-# 查看已 staged 的變更統計
-git diff --staged --stat
-
-# 查看已 staged 的變更內容
-git diff --staged
+python scripts/analyze_git.py
 ```
 
 ### 步驟 2：檢查分支
 
-**判斷當前分支是否為 `main` 或 `master`：**
+根據腳本輸出的 `IsMain` 與 `Branch` 欄位判斷：
 
-**情況 A（安全分支）：** 若當前**不是** `main` 或 `master` 分支
+**情況 A（安全分支）：** 若 `IsMain: false`
 - 繼續執行步驟 3
 
-**情況 B（主分支）：** 若當前**是** `main` 或 `master` 分支
+**情況 B（主分支）：** 若 `IsMain: true`
 - **停止**後續操作
-- 依據變更內容，建議符合規範的**新分支名稱**
-  - 範例：`feat/login-form-validation`、`fix/payment-bug`
+- 依據變更內容，建議符合規範的**新分支名稱**（範例：`feat/login-form-validation`、`fix/payment-bug`）
 - **回報錯誤**：`請先切換至建議的分支（或自訂分支）後，再執行 commit。`
 
-### 步驟 3：分析複雜度
+### 步驟 3：分析複雜度與模式
 
-根據 `git diff --staged --stat` 輸出，使用以下評分系統計算複雜度：
+根據腳本輸出的 `Score` 與 `RiskFactors` 決定模式：
 
-#### 複雜度評分表
-
-起始分數為 0，符合條件則加分：
-
-| 類別 | 條件 | 分數 |
-|------|------|------|
-| **變更量** | 變更行數 > 200 | +3 |
-| | 變更檔案數 > 5 | +2 |
-| **高風險檔案** | 涉及 lock 檔案（`package-lock.json`、`yarn.lock`、`pnpm-lock.yaml`） | +5（強制複雜模式） |
-| | 涉及資料庫 Schema 或 Migration | +3 |
-| | 涉及認證或安全邏輯（`auth`、`security`、`permission`） | +3 |
-| **架構變更** | 涉及設定檔（`*.config.*`、`.env*`） | +2 |
-| | 涉及 CI/CD 設定（`.github/`、`.gitlab-ci.yml`） | +2 |
-
-### 步驟 4：選擇提交模式
-
-根據總分選擇提交模式：
-
-#### 情況 A：簡單模式（分數 < 4）
+#### 情況 A：簡單模式（Score < 4）
 
 - 直接使用 `-m` 參數生成 commit message
 - 適用於小型、低風險的變更
@@ -161,43 +142,54 @@ git diff --staged
 git commit -m "feat: 新增使用者登入功能"
 ```
 
-多行訊息：
+#### 情況 B：複雜模式（Score >= 4）
 
-```bash
-git commit -m "feat: 新增使用者登入功能" -m "- 實作 JWT 認證機制
-- 新增登入表單驗證"
-```
+- **重要：若 Score 顯著過高（如 Score > 8），強烈建議拆分提交。**
+- 建議使用者使用檔案方式生成詳細的 commit message，或協助進行原子化拆分。
 
-#### 情況 B：複雜模式（分數 >= 4）
+### 步驟 4：原子化拆分提交（針對 Score > 8 或多種類型變更）
 
-- 使用檔案方式生成詳細的 commit message
-- 適用於大型、高風險或需要詳細說明的變更
+若決定拆分提交，請引導使用者執行以下步驟：
 
-```bash
-# 將訊息寫入 .git/COMMIT_EDITMSG
-git commit -F .git/COMMIT_EDITMSG
-```
-
-或使用獨立檔案（提交後需清理）：
-
-```bash
-# macOS/Linux
-git commit -F commit-message.txt && rm -f commit-message.txt
-
-# Windows
-git commit -F commit-message.txt
-# 提交後手動刪除 commit-message.txt
-```
+1. **撤銷目前的所有 add**：`git reset`
+2. **第一階段 add**：選擇相關性強的檔案，例如 `git add src/auth.ts src/security.ts`
+3. **執行第一階段 commit**：生成對應的 commit message
+4. **第二階段 add**：例如 `git add package-lock.json`
+5. **執行第二階段 commit**：生成對應的 commit message
 
 ### 步驟 5：生成 Commit Message 並確認
 
 1. 分析變更類型和影響範圍
 2. 根據變更內容決定最適合的 commit type
-3. 依據步驟 4 選擇的模式，輸出完整的 Commit Message
+3. 依據步驟 3 選擇的模式，輸出完整的 Commit Message
 4. 輸出對應的 `git commit` 指令
 5. **詢問使用者**：是否需要協助執行 commit？
-   - **是**：執行 `git commit` 指令完成提交
-   - **否**：由使用者自行複製指令執行
+
+## 範例
+
+### 拆分提交建議範例
+
+```markdown
+### ⚠️ 偵測到高複雜度變更 (Score: 10)
+
+本次變更涉及認證邏輯重構與套件更新，建議拆分為兩個提交以符合原子化原則：
+
+#### 第一步：重構認證邏輯
+1. 執行：`git reset`
+2. 執行：`git add src/auth.ts src/security.ts`
+3. Commit Message：`refactor(auth): 重構認證模組安全性邏輯`
+
+#### 第二步：更新套件
+1. 執行：`git add pnpm-lock.yaml`
+2. Commit Message：`build: 更新相依性鎖定檔`
+```
+
+## 注意事項
+
+- **Lock 檔案偵測範圍**：包含 `package-lock.json`、`yarn.lock`、`pnpm-lock.yaml`、`bun-lock.json`、`Cargo.lock`、`go.sum`、`poetry.lock`、`Gemfile.lock` 等。
+- **只有 staged 狀態的變更會被考慮**。
+- 若變更過於複雜，建議拆分為多個獨立的 commit。
+- 當提交符合一或多種提交類型時，應盡可能切成多個提交。
 
 ## 範例
 
