@@ -52,7 +52,7 @@ npx skills add https://github.com/gn00678465/AgentSkills.git
 - **建立 PR**：從當前分支建立 Pull Request 到目標分支
 - **修改 PR**：更新現有 PR 的標題或描述
 - **分析 commits**：自動彙整分支變更產生 PR 內容
-- **防止轉義**：強制使用 `--body-file` 避免換行符被轉義為 `\n` 字串。
+- **防止轉義**：強制使用 `--body-file`，避免 **PR 描述內容中的換行符** 被轉義為 `\n` 字串
 
 **Usage:**
 
