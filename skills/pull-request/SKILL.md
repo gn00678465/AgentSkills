@@ -2,7 +2,7 @@
 name: pull-request
 description: 協助建立、修改、查看或管理 GitHub Pull Request (PR)。自動分析分支 commits 與變更內容，產生符合規範的繁體中文 PR 標題與描述。使用時機包括：(1) 從當前分支建立新 PR、(2) 修改現有 PR 的標題、描述、審核者或標籤、(3) 檢查分支的 PR 狀態（開啟、已合併、已關閉）、(4) 需要自動彙整多個變更以產生摘要。適用於包含「建立 PR」、「create pull request」、「幫我開 PR」、「修改 PR 內容」等請求的情境。透過 GitHub CLI (gh) 執行操作。
 metadata:
-   version: 0.1.0
+   version: 0.1.1
 ---
 
 # GitHub Pull Request 助手
@@ -104,9 +104,9 @@ git --no-pager show <commit-hash> --stat
 
 ### 步驟 4：產生 PR 描述
 
-> 完整範本請參考 `references/pr-template.md`
+**必須嚴格遵守以下格式**，確保輸出為真正的 Markdown 換行，而非包含 `\n` 的字串：
 
-PR 內容應包含以下區塊：
+> 完整範本請參考 `references/pr-template.md`
 
 ```markdown
 ### 摘要
@@ -136,13 +136,11 @@ PR 內容應包含以下區塊：
 
 使用 GitHub CLI 建立 PR。
 
-**⚠️ 重要：使用 `--body-file` 避免轉義問題**
-
-直接在命令列使用 `--body` 會導致換行符 `\n` 和其他特殊字符出現轉義問題。**建議使用檔案方式**：
+**⚠️ 絕對禁止直接使用 `--body` 參數。必須先將內容寫入暫存檔案，再使用 `--body-file` 讀取內容，以避免換行符被轉義為 `\n` 字串。**
 
 ```bash
-# 方法 1（推薦）：將內容寫入暫存檔案
-# 1. 建立暫存檔案 pr-body.md，寫入 PR 描述內容
+# 正確做法：
+# 1. 建立暫存檔案 pr-body.md，寫入 PR 描述內容（確保內容中是真正的換行）
 # 2. 使用 --body-file 讀取檔案
 gh pr create --base <目標分支> --head <當前分支> --title "<標題>" --body-file pr-body.md
 
