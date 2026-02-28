@@ -34,7 +34,7 @@ npx skills add https://github.com/gn00678465/AgentSkills.git
 2. 輸入上述任一指令。
 3. 依據模型回饋選擇執行對應的 Git 指令。
 
-### GitHub PR
+### GitHub PR (v0.1.1)
 
 協助建立或修改 GitHub Pull Request，自動分析分支 commits 並產生繁體中文 PR 標題與描述。
 
@@ -52,6 +52,7 @@ npx skills add https://github.com/gn00678465/AgentSkills.git
 - **建立 PR**：從當前分支建立 Pull Request 到目標分支
 - **修改 PR**：更新現有 PR 的標題或描述
 - **分析 commits**：自動彙整分支變更產生 PR 內容
+- **防止轉義**：強制使用 `--body-file` 避免換行符被轉義為 `\n` 字串。
 
 **Usage:**
 
