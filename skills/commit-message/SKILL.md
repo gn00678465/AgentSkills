@@ -2,7 +2,7 @@
 name: commit-message
 description: 分析 git staged changes 並根據 Conventional Commits (1.0.0-beta.4) 規範自動生成繁體中文 commit message 與建議的分支名稱。使用時機包括：(1) 需要為已暫存 (staged) 的變更生成符合規範的提交訊息、(2) 需要根據變更內容建議一個有意義的分支名稱、(3) 確保提交包含正確的類型 (type) 與範圍 (scope)、(4) 在主分支 (main/master) 工作時需要自動化分支建議。適用於包含「幫我寫 commit message」、「產生 commit」、「建立 branch」、「取個分支名」、「提交變更」等請求的情境。會根據變更量與風險自動選擇簡單或詳細的提交模式。
 metadata: 
-  version: 0.2.1
+  version: 0.3.0
 ---
 
 # 慣例式提交與分支助手
@@ -117,6 +117,15 @@ BREAKING CHANGE: 移除舊版 API 端點，所有用戶端需更新至新版 SDK
 python scripts/analyze_git.py
 ```
 
+腳本輸出除了原有欄位外，現在也包含每個 staged 檔案的**變更類型**：
+
+| 欄位 | 說明 |
+|------|------|
+| `NewFiles` | 新增的檔案（`git status` 顯示 `A`） |
+| `ModifiedFiles` | 修改的現有檔案（顯示 `M`） |
+| `DeletedFiles` | 刪除的檔案（顯示 `D`） |
+| `RenamedFiles` | 重新命名的檔案（顯示 `R`，格式 `old -> new`） |
+
 ### 步驟 2：檢查分支
 
 根據腳本輸出的 `IsMain` 與 `Branch` 欄位判斷：
@@ -159,8 +168,20 @@ git commit -m "feat: 新增使用者登入功能"
 
 ### 步驟 5：生成 Commit Message 並確認
 
-1. 分析變更類型和影響範圍
-2. 根據變更內容決定最適合的 commit type
+1. **依據檔案狀態決定 commit type**（優先使用，再搭配 diff 內容確認）：
+
+   | 狀況 | 建議類型 |
+   |------|---------|
+   | `NewFiles` 為主，且為功能性程式碼 | `feat` |
+   | `NewFiles` 為主，且為測試檔案（`*.test.*`, `*.spec.*`） | `test` |
+   | `NewFiles` 為主，且為文件（`.md`, `.txt`） | `docs` |
+   | 僅有 `ModifiedFiles`，修正問題邏輯 | `fix` |
+   | 僅有 `ModifiedFiles`，程式碼重構（無功能變更） | `refactor` |
+   | 僅有 `RenamedFiles` 或檔案搬移 | `refactor` |
+   | 僅有 `DeletedFiles`（清理舊程式碼） | `chore` 或 `refactor` |
+   | 混合多種狀態，涉及功能新增 | `feat`（並考慮拆分） |
+
+2. 結合 `git diff` 內容確認描述的精確性
 3. 依據步驟 3 選擇的模式，輸出完整的 Commit Message
 4. 輸出對應的 `git commit` 指令
 5. **詢問使用者**：是否需要協助執行 commit？

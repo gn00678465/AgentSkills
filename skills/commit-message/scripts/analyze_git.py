@@ -10,6 +10,41 @@ def run_command(cmd):
     except Exception:
         return ""
 
+def parse_file_statuses():
+    """
+    解析 git status --porcelain 以取得每個 staged 檔案的變更類型。
+    回傳四個清單：新增(A)、修改(M)、刪除(D)、重新命名/複製(R/C) 的檔案。
+
+    Porcelain 格式：
+      XY PATH          (一般變更)
+      XY OLD -> NEW    (重新命名／複製)
+
+    X = 暫存區（staging area）狀態，Y = 工作目錄狀態。
+    本函式只讀取 X 欄位（staged 狀態）。
+    """
+    status_raw = run_command("git status --porcelain")
+    new_files = []
+    modified_files = []
+    deleted_files = []
+    renamed_files = []
+
+    for line in status_raw.splitlines():
+        if len(line) < 3:
+            continue
+        x = line[0]   # 暫存區狀態
+        path = line[3:]  # 跳過 "XY " 三個字元
+
+        if x == 'A':
+            new_files.append(path)
+        elif x == 'M':
+            modified_files.append(path)
+        elif x == 'D':
+            deleted_files.append(path)
+        elif x in ('R', 'C'):
+            renamed_files.append(path)  # 格式為 "old -> new"
+
+    return new_files, modified_files, deleted_files, renamed_files
+
 def analyze():
     # 1. 檢查分支
     current_branch = run_command("git branch --show-current")
@@ -25,23 +60,29 @@ def analyze():
     files_changed = 0
     insertions = 0
     deletions = 0
-    
+
     stats_lines = stats_raw.splitlines()
     if stats_lines:
         last_line = stats_lines[-1]
         files_match = re.search(r'(\d+) file', last_line)
         ins_match = re.search(r'(\d+) insertion', last_line)
         del_match = re.search(r'(\d+) deletion', last_line)
-        
+
         if files_match: files_changed = int(files_match.group(1))
         if ins_match: insertions = int(ins_match.group(1))
         if del_match: deletions = int(del_match.group(1))
-    
+
     total_lines = insertions + deletions
 
-    # 3. 取得變更檔案清單
+    # 3. 取得變更檔案清單與各別狀態
     files_list_raw = run_command("git diff --staged --name-only")
     files_list = files_list_raw.splitlines() if files_list_raw else []
+
+    new_files, modified_files, deleted_files, renamed_files = parse_file_statuses()
+    # 彙整所有 staged 檔案（用於風險評估）
+    all_staged = new_files + modified_files + deleted_files + [
+        p.split(' -> ')[-1] for p in renamed_files
+    ]
 
     # 4. 計算分數
     score = 0
@@ -65,9 +106,9 @@ def analyze():
         risk_factors.append(f"包含 Lock 檔案: {', '.join(found_locks)}")
 
     # 安全與資料庫檢查
-    has_auth = any(re.search(r'auth|security|permission|login', f, re.I) for f in files_list)
-    has_db = any(re.search(r'migration|schema|database|db', f, re.I) for f in files_list)
-    
+    has_auth = any(re.search(r'auth|security|permission|login', f, re.I) for f in all_staged)
+    has_db = any(re.search(r'migration|schema|database|db', f, re.I) for f in all_staged)
+
     if has_auth:
         score += 3
         risk_factors.append("涉及認證或安全邏輯")
@@ -75,36 +116,51 @@ def analyze():
         score += 3
         risk_factors.append("涉及資料庫變更")
 
-    # 5. 建議分支名稱邏輯
+    # 5. 建議分支名稱邏輯（使用檔案狀態優先推斷類型）
     suggested_branches = []
-    # 判斷主要類型
-    primary_type = "feat"
-    if any(re.search(r'fix|bug|patch', f, re.I) for f in files_list):
-        primary_type = "fix"
-    elif any(re.search(r'refactor', f, re.I) for f in files_list):
+
+    # 優先使用檔案狀態推斷類型，再用檔名關鍵字補充
+    if renamed_files and not new_files and not modified_files:
         primary_type = "refactor"
-    elif any(re.search(r'build|ci|chore', f, re.I) for f in files_list):
+    elif deleted_files and not new_files and not modified_files:
+        primary_type = "chore"
+    elif new_files:
+        primary_type = "feat"
+    elif any(re.search(r'fix|bug|patch', f, re.I) for f in modified_files):
+        primary_type = "fix"
+    elif any(re.search(r'refactor', f, re.I) for f in modified_files):
+        primary_type = "refactor"
+    elif any(re.search(r'build|ci|chore', f, re.I) for f in modified_files):
         primary_type = "build"
-        
+    else:
+        primary_type = "fix"  # 僅修改現有檔案，預設 fix（LLM 可依 diff 內容覆寫）
+
     # 根據檔案名稱提取關鍵詞
     keywords = []
     for f in files_list:
         name = os.path.basename(f).split('.')[0]
-        if name and name not in ["index", "main", "app", "file1", "file2", "SKILL"]: # 過濾無意義名稱
+        if name and name not in ["index", "main", "app", "file1", "file2", "SKILL"]:
             keywords.append(name)
-    
+
     top_keyword = keywords[0] if keywords else "work"
     suggested_branches.append(f"{primary_type}/{top_keyword}")
     if has_auth: suggested_branches.append(f"{primary_type}/auth-logic")
     if has_db: suggested_branches.append(f"{primary_type}/db-migration")
 
     # 輸出結果
+    def fmt_list(lst):
+        return ', '.join(lst) if lst else '(none)'
+
     print(f"Branch: {current_branch}")
     print(f"IsMain: {str(is_main).lower()}")
     print(f"Score: {score}")
     print(f"RiskFactors: {', '.join(risk_factors) if risk_factors else 'None'}")
     print(f"FilesChanged: {files_changed}")
     print(f"TotalLines: {total_lines}")
+    print(f"NewFiles: {fmt_list(new_files)}")
+    print(f"ModifiedFiles: {fmt_list(modified_files)}")
+    print(f"DeletedFiles: {fmt_list(deleted_files)}")
+    print(f"RenamedFiles: {fmt_list(renamed_files)}")
     print(f"SuggestedBranches: {', '.join(suggested_branches)}")
     print("-" * 20)
     print(stats_raw)
