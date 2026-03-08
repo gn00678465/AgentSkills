@@ -59,7 +59,7 @@ def analyze():
         "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun-lock.json",
         "Cargo.lock", "go.sum", "poetry.lock", "Gemfile.lock", "composer.lock"
     ]
-    found_locks = [f for f in files_list if f in lock_files]
+    found_locks = [f for f in files_list if os.path.basename(f) in lock_files]
     if found_locks:
         score += 5
         risk_factors.append(f"包含 Lock 檔案: {', '.join(found_locks)}")
